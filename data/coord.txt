@@ -1,0 +1,5 @@
+1. The upstream catchment area of the potential intake site is 258.5 km2
+
+2. Station description. ID, 11041, Name, WAGA (MUYANGE), Type, Station hydrometrique. Longitude, 29,84138889, Latitude, -3,52, Altitude, 1575, m. River, WAGA
+
+3. RUVYIRONZA (MUYANGE), Type, Station hydrometrique. Longitude, 29,84833333, Latitude, -3,5125, Altitude, 1565, m.
