@@ -14,7 +14,6 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 import seaborn as sns
 import numpy as np
-import pandas as pd
 import os
 import plotly.express as px
 from skimage import io
@@ -22,6 +21,7 @@ import matplotlib.dates as mdates
 from mpl_toolkits.mplot3d import Axes3D
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 import statsmodels.api as sm
+import pandas as pd
 
 
 #------------------------------------------------------------------------------- SETTINGS
@@ -62,6 +62,7 @@ def print_map(df_loc, zoom=10):
     fig.update_layout(mapbox_style='open-street-map')
     fig.update_layout(margin={'r':0, 't':50, 'l':0, 'b':10})
     fig.show()
+
 
 ## FEATURE TARGET
 def feature_target_relation(df, key, ylabel='', feature='hour', location='test', name='', vis=True, subdir=''):
@@ -112,6 +113,7 @@ def feature_target_relation(df, key, ylabel='', feature='hour', location='test',
     else:
         plt.close()
 
+
 ## PLOT TS OVERVIEW
 def plot_overview(df, key, title, location='test', ylabel='', alpha=0.05, width=20, height=5, ylim=None, outliers=None, vis=True, subdir=''):
     '''
@@ -141,10 +143,10 @@ def plot_overview(df, key, title, location='test', ylabel='', alpha=0.05, width=
     fig, ax = plt.subplots(figsize=(width,height))
     if outliers is None:
         ax.plot(df.index, df[key], '-o', alpha = alpha, label=key, color='blue')
-        ax.plot(df.index, df[key], label=key, color=(125/255, 216/255, 167/255))
+        ax.plot(df.index, df[key], label=key, color='red')
     else:
         ax.plot(df.index[-outliers], df[key][-outliers], 'o', alpha=alpha, label=key, color='blue')
-        ax.plot(df.index[-outliers], df[key][-outliers], label=key, color=(125/255, 216/255, 167/255))
+        ax.plot(df.index[-outliers], df[key][-outliers], label=key, color='red')
         ax.plot(df.index[outliers], df[key][outliers], 'o', label='Outsiders', color='red')
 
 
@@ -171,6 +173,7 @@ def plot_overview(df, key, title, location='test', ylabel='', alpha=0.05, width=
         plt.show()
     else:
         plt.close()
+
 
 ## PLOT TIF OVERVIEW
 def im_show(img, title=('Test',), s_shape=[1,1], cmap=('viridis',), bbox=[0,0,0,0], bbox_on=(True,), mode=('img',), name=None, vis=True, norm=False):
@@ -217,7 +220,7 @@ def im_show(img, title=('Test',), s_shape=[1,1], cmap=('viridis',), bbox=[0,0,0,
 
     
     ## INITIALIZE PLOT
-    fig = plt.figure(figsize=(20,7))
+    fig = plt.figure(figsize=(20,10))
     ax = [0] * len(img)
 
 
@@ -241,7 +244,6 @@ def im_show(img, title=('Test',), s_shape=[1,1], cmap=('viridis',), bbox=[0,0,0,
                 ax[i].plot(np.sort(tmp/np.max(tmp), axis=None))
             else:
                 ax[i].plot(np.sort(tmp, axis=None))
-            ax[i].grid()
         elif mode[i] == 'hist':
             tmp = np.copy(img[i]).astype(int).ravel()
             tmp = tmp[np.where(tmp>0)]
@@ -252,9 +254,9 @@ def im_show(img, title=('Test',), s_shape=[1,1], cmap=('viridis',), bbox=[0,0,0,
                 ax[i].hist(tmp, bins, density=True)
             else:
                 ax[i].hist(tmp, bins)
-            ax[i].grid()
         else:
             print('POMM ERROR: Mode not valid.')
+        ax[i].grid(False)
 
 
         ## BOUNDING BOX
@@ -269,6 +271,7 @@ def im_show(img, title=('Test',), s_shape=[1,1], cmap=('viridis',), bbox=[0,0,0,
         plt.savefig('./output/plots/' + name + '.png', dpi=300, bbox_inches='tight')
     if vis:
         plt.show()
+
 
 ## PLOT TENSOR (THREAD)
 def plot_tensor(tensor=None):
@@ -298,6 +301,7 @@ def plot_tensor(tensor=None):
             os.system('python ' + '"' + path + '\\pomm\\tmp\\tmp.py" qt_giv')
         else:
             os.system('python ' + '"' + path + '\\pomm\\tmp\\tmp.py" qt_std')
+
 
 ## PLOT 3D SURFACE (THREAD)
 def terrain_3d(elevation=None, textures=None, mode='dots'):
@@ -360,6 +364,7 @@ def terrain_3d(elevation=None, textures=None, mode='dots'):
         if not elevation is None:
             os.system('python ' + '"' + path + '\\pomm\\tmp\\tmp.py" urs_terrain_mesh')
 
+
 ## PLOT RAINFALL RUNOFF
 def plot_rainfall_runoff(df, rain, runoff, model=None, startdate=None, days=None, plot_title='Rainfall - Runoff'):
     """
@@ -395,7 +400,7 @@ def plot_rainfall_runoff(df, rain, runoff, model=None, startdate=None, days=None
     ax1.set_title(plot_title)
     ax1.plot(df.index, df[runoff], color='red', label='Validation')
     if not model is None:
-        ax1.plot(df.index, df[model], color='green', label='Model')
+        ax1.plot(df.index, model, color='green', label='Model')
     ax1.set(ylim=(0, np.max(df[runoff])*1.5))
     ax1.set_ylabel('Streamflow [$m^3$/s]')
     ax1.set_xlabel('Day')
@@ -429,6 +434,7 @@ def plot_rainfall_runoff(df, rain, runoff, model=None, startdate=None, days=None
     ## SHOW PLOT
     plt.show()
 
+
 ## SHOW MANNINGS-COEFFICIENT WITH CURVE NUMBER
 def plot_mc_cn(ts=[], CN_borders=[], vis=True):
     """
@@ -456,6 +462,7 @@ def plot_mc_cn(ts=[], CN_borders=[], vis=True):
         plt.title('MC - CN - Distribution')
         plt.show()
 
+
 ## PLOT 3D SURFACE IN MATPLOTLIB
 def plot_3d(x, y, z):
         """
@@ -479,17 +486,19 @@ def plot_3d(x, y, z):
         # sexp.on_changed(update)
         plt.show()
 
+
 ## PLOT NETCDF-DISTRIBUTION
 def plot_nc(ds, lat_size, lon_size):
     """
     """
     fig, ax = plt.subplots(1,1)
-    img = ax.imshow(np.array(ds.variables['pev'])[0])
+    img = ax.imshow(np.array(ds.variables['skt'])[0])
     ax.set_xticks(range(lon_size))
     ax.set_xticklabels(np.array(ds.variables['longitude']))
     ax.set_yticks(range(lat_size))
     ax.set_yticklabels(np.array(ds.variables['latitude']))
     fig.colorbar(img)
+
 
 ## PLOT FLOW DURATION CURVE WITH 
 def plot_fdc(df, key=False, ylabel='Runoff [m^3/s]', log=False, title='FDC'):
@@ -544,8 +553,8 @@ def plot_fdc(df, key=False, ylabel='Runoff [m^3/s]', log=False, title='FDC'):
     plt.xlabel('Percentage [%]')
     plt.ylabel(ylabel)
 
-## PLOT
-def plot_loess(df, key, title):
+## PLOT LOESS
+def plot_loess(df, key, title, name=None):
     """
     """
     mean_average_annual_precip = np.mean(df[key].groupby(pd.Grouper(freq='1Y')).mean())
@@ -560,6 +569,10 @@ def plot_loess(df, key, title):
     plt.plot(smoothed_x, smoothed_y, label="LOESS Smoothing", color=(125/255, 216/255, 167/255), linewidth=2)
     plt.ylabel('Deviations in %')
     plt.title(title)
+
+    if not name is None:
+        plt.savefig('./output/plots/' + name + '_loess.png', dpi=300, bbox_inches='tight')
+
     plt.show()
 
 #------------------------------------------------------------------------------- MAIN RUN

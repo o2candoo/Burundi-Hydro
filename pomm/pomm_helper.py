@@ -18,14 +18,12 @@ import netCDF4 as nc
 import os
 from skimage import io, color
 from sklearn.metrics import r2_score
-from sklearn.linear_model import LinearRegression,HuberRegressor
-from sklearn.preprocessing import PolynomialFeatures
 
 
 #------------------------------------------------------------------------------- SETTINGS
 ## IGNORE WARNINGS IN JUPYTER NOTEBOOK
 warnings.filterwarnings('ignore')
- 
+
 
 #------------------------------------------------------------------------------- FUNCTIONS
 ## TIME FEATURES
@@ -34,11 +32,8 @@ def create_timefeatures(df):
     Create time series features based on time series index
     """
     df = df.copy()
-    try:
-        df['minute'] = df.index.minute
-        df['hour'] = df.index.hour
-    except Exception as e:
-        print(e)
+    df['minute'] = df.index.minute
+    df['hour'] = df.index.hour
     df['dayofweek'] = df.index.day_of_week
     df['quarter'] = df.index.quarter
     df['month'] = df.index.month
@@ -53,7 +48,7 @@ def create_timefeatures(df):
 def calc_Q(a, b, H, H0):
     """
     """
-    return a * (H + H0) ** b
+    return a * (H - H0) ** b
 
 
 def catchment_size(catchment, shape_0, shape_1):
@@ -82,6 +77,7 @@ def catchment_size(catchment, shape_0, shape_1):
     return x_min, x_max, y_min, y_max
 
 
+# Read netcdf file
 def read_nc(path, info=True):
     """
     """
@@ -103,21 +99,31 @@ def read_nc(path, info=True):
     return ds, lat_size, lon_size
 
 
-def load_ERA5(lat_index, lon_index, months, years, plot_nc, plant_name):
+# Load ERA5 files
+def load_ERA5(lat_index, lon_index, months, years, plot_nc, plant_name, subdir=None):
     """
     """
     ## INITIAL VARIABLES
-    START = datetime.strptime('1900-01-01 00:00:00.0', '%Y-%m-%d %H:%M:%S.%f')
+    # START = datetime.strptime('1900-01-01 00:00:00.0', '%Y-%m-%d %H:%M:%S.%f')
     df_era5 = pd.DataFrame()
 
     ## LOOP OVER YEARS AND MONTHS
     for i, year in enumerate(years):
         for j, month in enumerate(months):
 
-            ## READ CURRENT NC-FILE
+            ## SHOW INFO ONLY FOR FIRST FILE
             if i==0 and j==0: info = True
             else: info = False
-            ds, lat_size, lon_size = read_nc('./data/ERA5/' + plant_name + '_ERA5_' + year + '_' + month + '.nc', info=info)
+            
+            ## READ CURRENT NC-FILE
+            try:
+                if not subdir is None:
+                    ds, lat_size, lon_size = read_nc('./data/ERA5/' + subdir + plant_name + '_ERA5_' + year + '_' + month + '.nc', info=info)
+                else:
+                    ds, lat_size, lon_size = read_nc('./data/ERA5/' + plant_name + '_ERA5_' + year + '_' + month + '.nc', info=info)
+            except Exception as e:
+                print(e)
+                print('Continue executed.')
 
             ## PRINT LON/LAT INFO
             if i==0 and j==0:
@@ -128,11 +134,24 @@ def load_ERA5(lat_index, lon_index, months, years, plot_nc, plant_name):
                 print(f'Chosen lat/lon: {lat} {lon}')
 
             ## CONVERT TIMESTAMPS FROM 'hours since...' TO DATETIME FORMAT
-            times = np.array(ds.variables['time'])
-            Date = [START + timedelta(hours=int(times[i])) for i in range(times.shape[0])]
+            try:
+                times = np.array(ds.variables['time']) # Old ERA5 implementation --> Time variable was called 'time'
+                print('Old ERA5 implementation used')
+                START = datetime.strptime('1900-01-01 00:00:00.0', '%Y-%m-%d %H:%M:%S.%f')
+                leave_out_variables = 3
+                Date = [START + timedelta(hours=int(times[i])) for i in range(times.shape[0])]
+            except Exception as e:
+                print('\nFrigg: New ERA5 implementation detected, causing the following Error:')
+                print(e)
+                print('Frigg: New variable name for time used instead.')
+                print('Frigg: New hours since starting points used instead.')
+                times = np.array(ds.variables['valid_time']) # New ERA5 implementation --> Time variable is now called 'valid_time'
+                START = datetime.strptime('1970-01-01 00:00:00.0', '%Y-%m-%d %H:%M:%S.%f')
+                leave_out_variables = 5
+                Date = [START + timedelta(seconds=int(times[i])) for i in range(times.shape[0])]
 
             ## PULL OUT VARIABLES, CONVERT TO NUMPY TS
-            variables = list(ds.variables.keys())[3:]
+            variables = list(ds.variables.keys())[leave_out_variables:]
             values = []
             for variable in variables:
                 values.append(np.array(ds.variables[variable])[:,lat_index,lon_index])
@@ -152,7 +171,7 @@ def load_ERA5(lat_index, lon_index, months, years, plot_nc, plant_name):
             if i==0 and j==0:
                 df_era5 = df_tmp.copy()
             else:
-                df_era5 = df_era5.append(df_tmp)
+                df_era5 = df_era5._append(df_tmp)
 
     ## SORT INDEX
     df_era5 = df_era5.sort_index()
@@ -163,7 +182,6 @@ def load_ERA5(lat_index, lon_index, months, years, plot_nc, plant_name):
 def calc_nse(mod, val):
     """
     """
-    
     return 1 - ( sum( (mod-val)**2 ) / sum( (val-np.mean(val))**2 ) )
 
 
@@ -177,7 +195,7 @@ def calc_mse(mod, val, n):
 def calc_distance(catchment, flowdir, intake_x, intake_y, res):
 
     ## RESERVE MATRICES
-    amount = 2000 # Maximum amount of steps
+    amount = 1000 # Maximum amount of steps
     movementX = np.zeros((amount, catchment.shape[0], catchment.shape[1]), dtype=np.int32) # 3D-Matrix with time-depended movement in X-direction
     movementY = np.zeros((amount, catchment.shape[0], catchment.shape[1]), dtype=np.int32) # 3D-Matrix with time-depended movement in Y-direction
     steps_to_intake = np.zeros((catchment.shape[0], catchment.shape[1]), dtype=np.int32) # 2D-Matrix with how many steps each pixxel took to reach intake
@@ -202,7 +220,7 @@ def calc_distance(catchment, flowdir, intake_x, intake_y, res):
         ## CALC FOR EACH PIXXEL NEXT STEP
         for x in range(catchment.shape[0]):
             for y in range(catchment.shape[1]):
-
+                
                 ## CHECK IF CURRENT PIXXEL IS WITHIN CATCHMENT
                 if not catchment[x,y] > 0:
                     continue
@@ -302,66 +320,7 @@ def export_blender(elevation, tensor):
             print(f'{i} / {tensor.shape[0]}')
         tmp = np.copy(elevation)
         io.imsave('./Blender/water_added/storage_' + str(i) + '.tif', tmp + tensor[i,:,:])
-
-
-def linreg(X, Y):
-    """
-    """
-    ## TREAT INPUT
-    x_part,y_part = X.reshape(-1, 1), Y
-
-    ## CALCULATE RESULTS
-    model = LinearRegression()
-    model.fit(x_part, y_part)
-    y_pred = model.predict(x_part)
-    coef_ = model.coef_[0]
-    R2 = model.score(x_part, y_part)
-
-    return y_pred, coef_, R2, model
-
-
-def hubreg(X, Y):
-    """
-    """
-    ## TREAT INPUT
-    x_lr, y_lr = X.reshape(-1,1), Y
-
-    ## CALCULATE RESULTS
-    model = HuberRegressor()
-    model.fit(x_lr, y_lr)
-    y_lr_pred = model.predict(x_lr)
-    coef_ = model.coef_[0]
-    R2 = model.score(x_lr, y_lr)
-
-    return y_lr_pred, coef_, R2, model
-
-
-def polyreg(X, Y, degree):
-    """
-    """
-    ## INIT POLY FIT
-    poly = PolynomialFeatures(degree=degree, include_bias=False) #include bias=False means don't force y-intercept to equal zero
-
-    ## TREAT INPUT
-    x_lr, y_lr = poly.fit_transform(X.reshape(-1, 1)), Y
-
-    ## CALCULATE RESULTS
-    model = LinearRegression()
-    model.fit(x_lr, y_lr)
-    y_lr_pred = model.predict(x_lr)
-    coef_ = model.coef_[0]
-    R2 = model.score(x_lr, y_lr)
-
-    return y_lr_pred, coef_, R2, model
-
-
-def expreg(X, Y, degree):
-    """
-    """
-    ## TREAT INPUT
-    model_coef = np.polyfit(X, np.log(Y), degree)
-    return model_coef
-
+    
 
 #------------------------------------------------------------------------------- MAIN RUN
 if __name__ == '__main__':

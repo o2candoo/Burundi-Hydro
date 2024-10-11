@@ -57,9 +57,6 @@ class Pomm():
             self.intake_x, self.intake_y = self.params[self.station_name]['Intake'][0], self.params[self.station_name]['Intake'][1]
             self.spatial_res = self.params[self.station_name]['Resolution'] # in Meters (m)
             self.coordinates = self.params[self.station_name]['Coordinates']
-            print('{:25s} {:20s}'.format('Intake indices:', f'{self.intake_x}, {self.intake_y}'))
-            print('{:25s} {:20s}'.format('Spatial resolution:', f'{self.spatial_res}'))
-            print('{:25s} {:20s}'.format('Coordinates:', f'{self.coordinates}'))
         except Exception as e:
             print('Error')
             print(e)
@@ -357,7 +354,7 @@ class Pomm():
         ## GeoSpacial
         catchment, elevation, spatial_res, flowdir, x_min, x_max, y_min, y_max, T, intake_x, intake_y,
         ## Pomm Specific
-        CN_init, Sabs_init, mc_overland, mc_subsurface, evap_factors, evap_month, evapo, evapo_temperature, max_shift,
+        CN_init, Sabs_init, mc_overland, mc_subsurface, evap_factors, evap_month,
         ## Checkpoint
         water, soil, Q_water, Q_soil, V_water, V_soil
         ):
@@ -425,12 +422,11 @@ class Pomm():
         mc_factor = np.ones(T, dtype=np.float32)
 
         # Max water shift
-        max_shift = max_shift
+        # max_shift = 500
+        max_shift = 10000000000000000
 
         # Evaporation
-        # a_evap = (math.log(evap_max) - math.log(evap_min)) / (max_precip - min_precip)
-        # b_evap = math.log(evap_min) - a_evap * min_precip
-        evapo = evapo
+        evapo = 0.5
 
 ##########################################################################################
 
@@ -448,20 +444,11 @@ class Pomm():
             water_tmp = np.zeros((size_x,size_y), dtype=np.float32)
             soil_tmp = np.zeros((size_x,size_y), dtype=np.float32)
             # Rain Matrix
-            # # Precipiptation and Evapo
-            # evap_factor = evap_factors[int(month_long[k]-1)]
-            # evapo = np.exp( (a_evap * rain[k,intake_x,intake_y] + b_evap) * evap_factor)
-            # evapo = evap_factors[evap_month[t%12]]
-
-            evapo = evap_factors[int(evap_month[t]-1)]
-
-            evapo *= evapo_temperature[t]
-
+            evapo = evap_factors[evap_month[t%12]]
             rain = np.ones((size_x,size_y), dtype=np.float32) * precip[t]
             rain *= catchment # Only let it rain over catchment pixxels
             rain *= evapo
             water += rain
-            # water[intake_x, intake_y] = 0 # OUTFLOW OF CATCHMENT
 
 ##########################################################################################
 
@@ -470,7 +457,7 @@ class Pomm():
                 for j in range(1, size_y-1):
 
                     ## INITIAL CONDITIONS
-                    # If not in catchment, pass
+                    # If current pixxel not in catchment, pass
                     if catchment[i,j] == 0:
                         water[i,j] = 0
                         continue
@@ -546,9 +533,9 @@ class Pomm():
             E_soil = elevation + soil + 1.0 / (2 * g) * V_soil**2
 
             # Empty outflow pixxel
-            water[1250,396] = 0
-            E_water[1250,396] = 0
-            E_soil[1250,396] = 0
+            water[intake_x,intake_y] = 0
+            E_water[intake_x,intake_y] = 0
+            E_soil[intake_x,intake_y] = 0
 
 ##########################################################################################
 
@@ -557,7 +544,7 @@ class Pomm():
                 for j in range(1, size_y-1):
 
                     ## INITIAL CONDITIONS
-                    # If not in catchment, pass
+                    # If current pixxel not in catchment, pass
                     if catchment[i,j] == 0:
                         water[i,j] = 0
                         continue
@@ -583,52 +570,6 @@ class Pomm():
                         ind_x = i
                         ind_y = j
                         width = spatial_res
-
-
-                    # # Find target pixxel index (Think about changes due to potential Energy...)
-                    # # North East    1
-                    # if flowdir[i,j] == 1:
-                    #     ind_x = i-1
-                    #     ind_y = j+1
-                    #     width = np.sqrt(spatial_res**2 + spatial_res**2)
-                    # # East          8
-                    # elif flowdir[i,j] == 8:
-                    #     ind_x = i
-                    #     ind_y = j+1
-                    #     width = spatial_res
-                    # # South East    7
-                    # elif flowdir[i,j] == 7:
-                    #     ind_x = i+1
-                    #     ind_y = j+1
-                    #     width = np.sqrt(spatial_res**2 + spatial_res**2)
-                    # # South         6
-                    # elif flowdir[i,j] == 6:
-                    #     ind_x = i+1
-                    #     ind_y = j
-                    #     width = spatial_res
-                    # # South West    5
-                    # elif flowdir[i,j] == 5:
-                    #     ind_x = i+1
-                    #     ind_y = j-1
-                    #     width = np.sqrt(spatial_res**2 + spatial_res**2)
-                    # # West          4
-                    # elif flowdir[i,j] == 4:
-                    #     ind_x = i
-                    #     ind_y = j-1
-                    #     width = spatial_res
-                    # # North West    3
-                    # elif flowdir[i,j] == 3:
-                    #     ind_x = i-1
-                    #     ind_y = j-1
-                    #     width = np.sqrt(spatial_res**2 + spatial_res**2)
-                    # # North         2
-                    # elif flowdir[i,j] == 2:
-                    #     ind_x = i-1
-                    #     ind_y = j
-                    #     width = spatial_res
-                    # # Nothing
-                    # else:
-                    #     continue
 
                     # If target pixxel not in catchment, pass
                     if catchment[ind_x,ind_y] == 0:
@@ -656,7 +597,7 @@ class Pomm():
                     if Q_water[i,j] > max_shift:
                         Q_water[i,j] = max_shift
                     water[i,j] = water[i,j] - Q_water[i,j]
-                    # Borders
+                    # Empty Borders
                     if i==0 or i==(x_max-x_min-1) or j==0 or j==(y_max-y_min-1):
                         water[i,j] = 0
                     # Target Pixxel
