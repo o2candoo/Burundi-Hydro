@@ -224,11 +224,11 @@ class Pomm():
             ## OUTPUT SIZE
             print('New Shape:\t\t', self.catchment_cutted.shape)
 
-    def hydraulic_length(self):
+    def hydraulic_length(self, amount=1000):
         """
         """
         ## CALC ACCUMULATION
-        self.movementX, self.movementY, self.steps_to_intake, self.distance_to_intake, z, self.accumulation_calculated = calc_distance(self.catchment_cutted, self.flowdir_cutted, self.intake_x, self.intake_y, self.spatial_res)
+        self.movementX, self.movementY, self.steps_to_intake, self.distance_to_intake, z, self.accumulation_calculated = calc_distance(self.catchment_cutted, self.flowdir_cutted, self.intake_x, self.intake_y, self.spatial_res, amount)
         ## CUT RESERVED MATRIX TO MAX STEP LENGTH
         self.movementX, self.movementY = self.movementX[:z], self.movementY[:z]
 
