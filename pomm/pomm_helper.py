@@ -192,10 +192,10 @@ def calc_mse(mod, val, n):
 
 
 @njit(fastmath=True)
-def calc_distance(catchment, flowdir, intake_x, intake_y, res):
+def calc_distance(catchment, flowdir, intake_x, intake_y, res, amount=1000):
 
     ## RESERVE MATRICES
-    amount = 1000 # Maximum amount of steps
+    amount = amount # Maximum amount of steps
     movementX = np.zeros((amount, catchment.shape[0], catchment.shape[1]), dtype=np.int32) # 3D-Matrix with time-depended movement in X-direction
     movementY = np.zeros((amount, catchment.shape[0], catchment.shape[1]), dtype=np.int32) # 3D-Matrix with time-depended movement in Y-direction
     steps_to_intake = np.zeros((catchment.shape[0], catchment.shape[1]), dtype=np.int32) # 2D-Matrix with how many steps each pixxel took to reach intake

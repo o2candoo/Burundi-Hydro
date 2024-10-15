@@ -99,13 +99,13 @@ def feature_target_relation(df, key, ylabel='', feature='hour', location='test',
     ax.set_title(title)
     ax.set_ylabel(ylabel)
 
-    # ## SAVE PLOT
-    # mydir = './output/plots/' + subdir
-    # name = mydir + title + '.png'
-    # if not os.path.isdir(mydir):
-    #     print(f'Creating folder {mydir}')
-    #     os.mkdir(mydir)
-    # plt.savefig(name)
+    ## SAVE PLOT
+    mydir = './output/plots/' + subdir
+    name = mydir + title + '.png'
+    if not os.path.isdir(mydir):
+        print(f'Creating folder {mydir}')
+        os.mkdir(mydir)
+    plt.savefig(name)
 
     ## SHOW PLOT
     if vis:
@@ -400,7 +400,7 @@ def plot_rainfall_runoff(df, rain, runoff, model=None, startdate=None, days=None
     ax1.set_title(plot_title)
     ax1.plot(df.index, df[runoff], color='red', label='Validation')
     if not model is None:
-        ax1.plot(df.index, model, color='green', label='Model')
+        ax1.plot(df.index, df[model], color='green', label='Model')
     ax1.set(ylim=(0, np.max(df[runoff])*1.5))
     ax1.set_ylabel('Streamflow [$m^3$/s]')
     ax1.set_xlabel('Day')
@@ -430,6 +430,14 @@ def plot_rainfall_runoff(df, rain, runoff, model=None, startdate=None, days=None
     ## ADD LEGEND
     ax1.legend(loc='center right')
     ax2.legend(loc='center left')
+
+    ## SAVE PLOT
+    mydir = './output/plots/'
+    name = mydir + plot_title + '.png'
+    if not os.path.isdir(mydir):
+        print(f'Creating folder {mydir}')
+        os.mkdir(mydir)
+    plt.savefig(name)
 
     ## SHOW PLOT
     plt.show()
@@ -552,6 +560,14 @@ def plot_fdc(df, key=False, ylabel='Runoff [m^3/s]', log=False, title='FDC'):
     plt.title(title)
     plt.xlabel('Percentage [%]')
     plt.ylabel(ylabel)
+
+    ## SAVE PLOT
+    mydir = './output/plots/'
+    name = mydir + title + '.png'
+    if not os.path.isdir(mydir):
+        print(f'Creating folder {mydir}')
+        os.mkdir(mydir)
+    plt.savefig(name)
 
 ## PLOT LOESS
 def plot_loess(df, key, title, name=None):
