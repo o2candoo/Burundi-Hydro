@@ -128,7 +128,11 @@ def load_ERA5(lat_index, lon_index, months, years, plot_nc, plant_name, subdir=N
             ## PRINT LON/LAT INFO
             if i==0 and j==0:
                 ## SHOW MAP
-                plot_nc(ds, lat_size, lon_size)
+                try:
+                    plot_nc(ds, lat_size, lon_size)
+                except Exception as e:
+                    print(e)
+                    print('Frigg: not able to plot example, maybe wrong key chosen (skt not available).')
                 lat = round(float(ds.variables["latitude"][lat_index]),2)
                 lon = round(float(ds.variables["longitude"][lon_index]),2)
                 print(f'Chosen lat/lon: {lat} {lon}')
