@@ -18,6 +18,8 @@ import netCDF4 as nc
 import os
 from skimage import io, color
 from sklearn.metrics import r2_score
+import pvlib
+import matplotlib.pyplot as plt
 
 
 #------------------------------------------------------------------------------- SETTINGS
@@ -324,7 +326,72 @@ def export_blender(elevation, tensor):
             print(f'{i} / {tensor.shape[0]}')
         tmp = np.copy(elevation)
         io.imsave('./Blender/water_added/storage_' + str(i) + '.tif', tmp + tensor[i,:,:])
-    
+
+
+def calc_aoi(df, inclination, orientation, lat, lon):
+    """
+    """
+    df_ = df.copy()
+    ephem = pvlib.solarposition.get_solarposition(df_.index, lat, lon)
+    aoi = pvlib.irradiance.aoi(
+        surface_tilt=inclination,
+        surface_azimuth=orientation,
+        solar_zenith=ephem['zenith'],
+        solar_azimuth=ephem['azimuth']
+    )
+
+    return aoi, ephem
+
+
+def angles_filter(ssrd, name, location, discountfactor, lowcut, year, lat_era5, lon_era5, area, f_aoi=90, f_elevation=25, f_azimuth=[100,260], plot=True, shift_180=False):
+    """
+    """
+    aoi, ephem = calc_aoi(df=ssrd, inclination=0, orientation=0, lat=lat_era5, lon=lon_era5)
+
+
+    if shift_180:
+        ephem['azimuth'] += 180
+        ephem['azimuth'] %= 360
+
+    # DOWNWARDS
+    prod_sum = np.sum(ssrd[name][((ssrd[name]/3_600) > lowcut) & (ssrd.year==year)]) / 3_600_000 * area # kWh * area
+    print(f'ERA5 sum (> 300 W/m²):\t\t{round(prod_sum/1000, 2)} MWh')
+    print(f'Discounted:\t\t\t{round(prod_sum*discountfactor/1000, 2)} MWh')
+    prod_sum_aoi = np.sum(ssrd[name][((ssrd[name]/3_600) > lowcut) & (ssrd.year==year) & (aoi<=f_aoi)]) / 3_600_000 * area # kWh * area
+    print(f'AOI filtered:\t\t\t{round(prod_sum_aoi*discountfactor/1000, 2)} MWh\t{round((1-(prod_sum_aoi/prod_sum))*100, 2)} %')
+    prod_sum_elevation = np.sum(ssrd[name][((ssrd[name]/3_600) > lowcut) & (ssrd.year==year) & (ephem['elevation'] > f_elevation)]) / 3_600_000 * area # kWh * area
+    print(f'Elevation filtered:\t\t{round(prod_sum_elevation*discountfactor/1000, 2)} MWh\t{round((1-(prod_sum_elevation/prod_sum))*100, 2)} %')
+    prod_sum_azimuth = np.sum(ssrd[name][((ssrd[name]/3_600) > lowcut) & (ssrd.year==year) & (ephem['azimuth'] > f_azimuth[0]) & (ephem['azimuth'] < f_azimuth[1])]) / 3_600_000 * area # kWh * area
+    print(f'Azimuth filtered:\t\t{round(prod_sum_azimuth*discountfactor/1000, 2)} MWh\t{round((1-(prod_sum_azimuth/prod_sum))*100, 2)} %')
+    prod_sum = np.sum(ssrd[name][((ssrd[name]/3_600) > lowcut) & (ssrd.year==year) & (aoi<=f_aoi) & (ephem['elevation'] > f_elevation) & (ephem['azimuth'] > f_azimuth[0]) & (ephem['azimuth'] < f_azimuth[1])]) / 3_600_000 * area # kWh * area
+    print(f'Combined:\t\t\t{round(prod_sum*discountfactor/1000, 2)} MWh')
+    print('')
+
+    if plot:
+        plt.figure(figsize=[15,3])
+        plt.plot(aoi, label='all')
+        plt.plot(aoi[aoi<=f_aoi], 'o', color='blue', label='valid')
+        plt.legend()
+        plt.title(f'{location} aoi filter')
+        plt.show()
+
+        plt.figure(figsize=[15,3])
+        plt.plot(ephem['elevation'], label='all')
+        plt.plot(ephem['elevation'][(ephem['elevation'] > f_elevation)], 'o', color='blue', label='valid')
+        plt.legend()
+        plt.title(f'{location} Elevation filter')
+        plt.show()
+
+        plt.figure(figsize=[15,3])
+        plt.plot(ephem['azimuth'], 'o', label='all')
+        plt.plot(ephem['azimuth'][(ephem['azimuth'] > f_azimuth[0]) & (ephem['azimuth'] < f_azimuth[1])], 'o', color='blue', label='valid')
+        plt.legend()
+        if shift_180:
+            plt.title(f'{location} Azimuth filter')
+        else:
+            plt.title(f'{location} Azimuth filter - Shiftet 180°')
+        plt.show()
+
 
 #------------------------------------------------------------------------------- MAIN RUN
 if __name__ == '__main__':

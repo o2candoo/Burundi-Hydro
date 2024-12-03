@@ -65,10 +65,10 @@ def terrain_dots(img=None):
     dots_4 = dots[[i for i in range(0,size,8)]]
     dots_8 = dots[[i for i in range(0,size,16)]]
     terrains_dots = []
-    terrains_dots.append(urs.Entity(model=urs.Mesh(vertices=dots, mode='point', thickness=0.01), color=urs.color.rgba(0, 255, 0, 255)))
-    terrains_dots.append(urs.Entity(model=urs.Mesh(vertices=dots_2, mode='point', thickness=0.01), color=urs.color.rgba(255, 255, 255, 0)))
-    terrains_dots.append(urs.Entity(model=urs.Mesh(vertices=dots_4, mode='point', thickness=0.01), color=urs.color.rgba(255, 255, 255, 0)))
-    terrains_dots.append(urs.Entity(model=urs.Mesh(vertices=dots_8, mode='point', thickness=0.01), color=urs.color.rgba(255, 255, 255, 0)))
+    terrains_dots.append(urs.Entity(model=urs.Mesh(vertices=dots, mode='point', thickness=1), color=urs.color.rgba(0, 255, 0, 255)))
+    terrains_dots.append(urs.Entity(model=urs.Mesh(vertices=dots_2, mode='point', thickness=1), color=urs.color.rgba(255, 255, 255, 0)))
+    terrains_dots.append(urs.Entity(model=urs.Mesh(vertices=dots_4, mode='point', thickness=1), color=urs.color.rgba(255, 255, 255, 0)))
+    terrains_dots.append(urs.Entity(model=urs.Mesh(vertices=dots_8, mode='point', thickness=1), color=urs.color.rgba(255, 255, 255, 0)))
     
 
     ## INIT CAMERA
