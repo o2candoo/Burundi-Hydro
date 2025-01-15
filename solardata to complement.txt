@@ -1,0 +1,6 @@
+x Dataframe of weather data (Temperature, Precipitation, Solar irradiance) for 24-25 years
+x plots
+x fact sheet of the panels
+x rough calculation regarding 500 kW (164 kW)
+x link of tanzania sunhours
+x online source / papers regarding degredation/soiling/...
