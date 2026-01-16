@@ -211,7 +211,7 @@ def calc_distance(catchment, flowdir, intake_x, intake_y, res, amount=1000):
     ## PRE SETTINGS / INFOS
     tot = np.sum(catchment) # Pixxels to calculate
     print('Pixxels to calculate:', tot)
-    lv = 1 # Pixxels calculated
+    lv = 1 # Pixxels calculated, reached intake
     z = -1 # Target reached after z steps
 
     ## LOOP UNTIL ALL PIXXELS REACHED INTAKE
@@ -220,6 +220,7 @@ def calc_distance(catchment, flowdir, intake_x, intake_y, res, amount=1000):
         ## CHECK IF RESERVED MATRICE-SIZE REACHED
         z += 1
         if z == amount:
+            print('Maximum amount of steps reached:')
             print(lv, tot, z)
             return movementX, movementY, steps_to_intake, distance_to_intake, z, accumulation
 

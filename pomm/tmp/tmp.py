@@ -183,7 +183,8 @@ if __name__ == '__main__':
     # commands.append('urs_terrain_mesh')
 
     if len(commands) == 1:
-        commands.append('urs_cube_dots')
+        # commands.append('urs_cube_dots')
+        commands.append('qt_giv')
     if len(commands) > 1:
 
 

@@ -423,7 +423,8 @@ class Pomm():
 
         # Max water shift
         # max_shift = 500
-        max_shift = 10000000000000000
+        # max_shift = 10000000000000000
+        max_shift = 40
 
         # Evaporation
         evapo = 0.5
